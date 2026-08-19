@@ -71,10 +71,27 @@ export async function POST(req: Request) {
     });
   }
 
+  const AVATAR_COLORS = [
+    "#E57373",
+    "#F06292",
+    "#BA68C8",
+    "#9575CD",
+    "#7986CB",
+    "#64B5F6",
+    "#4FC3F7",
+    "#4DD0E1",
+    "#4DB6AC",
+    "#81C784",
+    "#AED581",
+    "#FFD54F",
+    "#FFB74D",
+    "#FF8A65",
+    "#A1887F",
+  ];
+
   const name = user.fullName ?? user.primaryEmailAddress?.emailAddress ?? "Anonymous";
   const nameToNumber = name.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  const hue = Math.abs(nameToNumber) % 360;
-  const color = `hsl(${hue}, 80%, 60%)`;
+  const color = AVATAR_COLORS[Math.abs(nameToNumber) % AVATAR_COLORS.length];
 
   const session = liveblocks.prepareSession(user.id, {
     userInfo: {

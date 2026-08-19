@@ -2,7 +2,7 @@
 
 import { BellIcon } from "lucide-react";
 import { ClientSideSuspense } from "@liveblocks/react";
-import { useInboxNotifications } from "@liveblocks/react/suspense";
+import { useInboxNotifications, useUnreadInboxNotificationsCount } from "@liveblocks/react/suspense";
 import { InboxNotification, InboxNotificationList } from "@liveblocks/react-ui";
 
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,7 @@ export const Inbox = () => {
 
 const InboxMenu = () => {
   const { inboxNotifications } = useInboxNotifications();
+  const { count } = useUnreadInboxNotificationsCount();
 
   return (
     <>
@@ -46,9 +47,9 @@ const InboxMenu = () => {
             size="icon"
           >
             <BellIcon className="size-5" />
-            {inboxNotifications.length > 0 && (
+            {count > 0 && (
               <span className="absolute -top-1 -right-1 size-4 rounded-full bg-sky-500 text-xs text-white flex items-center justify-center">
-                {inboxNotifications.length}
+                {count}
               </span>
             )}
           </Button>
