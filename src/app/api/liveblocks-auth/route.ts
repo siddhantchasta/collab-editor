@@ -1,6 +1,6 @@
 import { Liveblocks } from "@liveblocks/node";
 import { ConvexHttpClient } from "convex/browser";
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth, currentUser, clerkClient } from "@clerk/nextjs/server";
 
 import { api } from "../../../../convex/_generated/api";
 
@@ -9,30 +9,66 @@ const liveblocks = new Liveblocks({
   secret: process.env.LIVEBLOCKS_SECRET_KEY!,
 });
 
+interface CustomSessionClaims {
+  org_id?: string;
+  orgId?: string;
+}
+
 export async function POST(req: Request) {
-  const { sessionClaims } = await auth();
+  const { sessionClaims, orgId } = await auth();
   if (!sessionClaims) {
-    return new Response("Unauthorized", { status: 401 });
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   const user = await currentUser();
   if (!user) {
-    return new Response("Unauthorized", { status: 401 });
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   const { room } = await req.json();
   const document = await convex.query(api.documents.getById, { id: room });
 
   if (!document) {
-    return new Response("Unauthorized", { status: 401 });
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   const isOwner = document.ownerId === user.id;
-  const isOrganizationMember = 
-    !!(document.organizationId && document.organizationId === sessionClaims.org_id);
+
+  let isOrganizationMember = false;
+  if (document.organizationId) {
+    const claims = sessionClaims as CustomSessionClaims | null;
+    const activeOrgId = orgId || claims?.org_id || claims?.orgId;
+    if (activeOrgId === document.organizationId) {
+      isOrganizationMember = true;
+    } else {
+      try {
+        const clerk = await clerkClient();
+        const memberships = await clerk.users.getOrganizationMembershipList({
+          userId: user.id,
+        });
+        isOrganizationMember = memberships.data.some(
+          (membership) => membership.organization.id === document.organizationId
+        );
+      } catch (error) {
+        console.error("Error checking organization membership:", error);
+      }
+    }
+  }
 
   if (!isOwner && !isOrganizationMember) {
-    return new Response("Unauthorized", { status: 401 });
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   const name = user.fullName ?? user.primaryEmailAddress?.emailAddress ?? "Anonymous";
@@ -51,4 +87,4 @@ export async function POST(req: Request) {
   const { body, status } = await session.authorize();
 
   return new Response(body, { status });
-};
+}

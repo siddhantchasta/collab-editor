@@ -75,7 +75,11 @@ export const Editor = ({ initialContent }: EditorProps) => {
     },
     extensions: [
       liveblocks,
-      StarterKit,
+      StarterKit.configure({
+        undoRedo: false,
+        link: false,
+        underline: false,
+      }),
       LineHeightExtension,
       FontSizeExtension,
       TextAlign.configure({

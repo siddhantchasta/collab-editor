@@ -44,8 +44,15 @@ export function Room({ children }: { children: ReactNode }) {
 
         const response = await fetch(endpoint, {
           method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
           body: JSON.stringify({ room }),
         });
+
+        if (!response.ok) {
+          throw new Error("Unauthorized");
+        }
 
         return await response.json();
       }}
