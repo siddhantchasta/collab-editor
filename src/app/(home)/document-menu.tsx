@@ -1,8 +1,9 @@
-import { ExternalLinkIcon, FilePenIcon, MoreVertical, TrashIcon } from "lucide-react";
+import { ExternalLinkIcon, FilePenIcon, GlobeIcon, MoreVertical, TrashIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { RemoveDialog } from "@/components/remove-dialog";
 import { RenameDialog } from "@/components/rename-dialog";
+import { ShareDialog } from "@/components/share-dialog";
 import {
   DropdownMenu,
   DropdownMenuItem,
@@ -15,10 +16,11 @@ import { Id } from "../../../convex/_generated/dataModel";
 interface DocumentMenuProps {
   documentId: Id<"documents">;
   title: string;
+  accessLevel?: "private" | "view" | "edit";
   onNewTab: (id: Id<"documents">) => void;
 };
 
-export const DocumentMenu = ({ documentId, title, onNewTab }: DocumentMenuProps) => {
+export const DocumentMenu = ({ documentId, title, accessLevel = "private", onNewTab }: DocumentMenuProps) => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -27,6 +29,19 @@ export const DocumentMenu = ({ documentId, title, onNewTab }: DocumentMenuProps)
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
+        <ShareDialog
+          documentId={documentId}
+          initialAccessLevel={accessLevel}
+          isOwnerOrOrgMember={true}
+        >
+          <DropdownMenuItem
+            onSelect={(e) => e.preventDefault()}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <GlobeIcon className="size-4 mr-2" />
+            Share
+          </DropdownMenuItem>
+        </ShareDialog>
         <RenameDialog documentId={documentId} initialTitle={title}>
           <DropdownMenuItem
             onSelect={(e) => e.preventDefault()}

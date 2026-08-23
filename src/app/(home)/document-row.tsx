@@ -31,7 +31,17 @@ export const DocumentRow = ({ document }: DocumentRowProps) => {
           ? <Building2Icon className="size-4" /> 
           : <CircleUserIcon className="size-4" />
         }
-        {document.organizationId ? "Organization" : "Personal"}
+        <span>{document.organizationId ? "Organization" : "Personal"}</span>
+        {document.accessLevel === "view" && (
+          <span className="text-[11px] bg-blue-50 text-blue-700 font-medium px-2 py-0.5 rounded-full border border-blue-200">
+            Public View
+          </span>
+        )}
+        {document.accessLevel === "edit" && (
+          <span className="text-[11px] bg-emerald-50 text-emerald-700 font-medium px-2 py-0.5 rounded-full border border-emerald-200">
+            Public Edit
+          </span>
+        )}
       </TableCell>
       <TableCell className="text-muted-foreground hidden md:table-cell">
         {format(new Date(document._creationTime), "MMM dd, yyyy")}
@@ -40,6 +50,7 @@ export const DocumentRow = ({ document }: DocumentRowProps) => {
         <DocumentMenu
           documentId={document._id}
           title={document.title}
+          accessLevel={document.accessLevel}
           onNewTab={() => window.open(`/documents/${document._id}`, "_blank")}
         />
       </TableCell>

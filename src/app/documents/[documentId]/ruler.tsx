@@ -3,10 +3,15 @@ import { FaCaretDown } from "react-icons/fa";
 import { useStorage, useMutation } from "@liveblocks/react";
 
 import { RIGHT_MARGIN_DEFAULT, LEFT_MARGIN_DEFAULT } from "@/constants/margins";
+import { cn } from "@/lib/utils";
 
 const markers = Array.from({ length: 83 }, (_, i) => i);
 
-export const Ruler = () => {
+interface RulerProps {
+  isReadOnly?: boolean;
+}
+
+export const Ruler = ({ isReadOnly = false }: RulerProps) => {
   const leftMargin = useStorage((root) => root.leftMargin) ?? LEFT_MARGIN_DEFAULT;
   const setLeftMargin = useMutation(({ storage }, position: number) => {
     storage.set("leftMargin", position);
@@ -22,14 +27,17 @@ export const Ruler = () => {
   const rulerRef = useRef<HTMLDivElement>(null);
 
   const handleLeftMouseDown = () => {
+    if (isReadOnly) return;
     setIsDraggingLeft(true);
   };
 
   const handleRightMouseDown = () => {
+    if (isReadOnly) return;
     setIsDraggingRight(true);
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
+    if (isReadOnly) return;
     const PAGE_WIDTH = 816;
     const MINIMUM_SPACE = 100;
 
@@ -60,10 +68,12 @@ export const Ruler = () => {
   };
 
   const handleLeftDoubleClick = () => {
+    if (isReadOnly) return;
     setLeftMargin(LEFT_MARGIN_DEFAULT);
   };
 
   const handleRightDoubleClick = () => {
+    if (isReadOnly) return;
     setRightMargin(RIGHT_MARGIN_DEFAULT);
   };
 
@@ -82,6 +92,7 @@ export const Ruler = () => {
           position={leftMargin}
           isLeft={true}
           isDragging={isDraggingLeft}
+          isReadOnly={isReadOnly}
           onMouseDown={handleLeftMouseDown}
           onDoubleClick={handleLeftDoubleClick}
         />
@@ -89,6 +100,7 @@ export const Ruler = () => {
           position={rightMargin}
           isLeft={false}
           isDragging={isDraggingRight}
+          isReadOnly={isReadOnly}
           onMouseDown={handleRightMouseDown}
           onDoubleClick={handleRightDoubleClick}
         />
@@ -131,6 +143,7 @@ interface MarkerProps {
   position: number;
   isLeft: boolean;
   isDragging: boolean;
+  isReadOnly?: boolean;
   onMouseDown: () => void;
   onDoubleClick: () => void;
 };
@@ -139,12 +152,16 @@ const Marker = ({
   position,
   isLeft,
   isDragging,
+  isReadOnly = false,
   onMouseDown,
   onDoubleClick,
 }: MarkerProps) => {
   return (
     <div
-      className="absolute top-0 w-4 h-full cursor-ew-resize z-[5] group -ml-2"
+      className={cn(
+        "absolute top-0 w-4 h-full z-[5] group -ml-2",
+        isReadOnly ? "cursor-default" : "cursor-ew-resize"
+      )}
       style={{ [isLeft ? "left" : "right"]: `${position}px` }}
       onMouseDown={onMouseDown}
       onDoubleClick={onDoubleClick}

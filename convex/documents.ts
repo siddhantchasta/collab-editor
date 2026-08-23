@@ -23,12 +23,16 @@ export const getByIds = query({
 });
 
 export const create = mutation({
-  args: { title: v.optional(v.string()), initialContent: v.optional(v.string()) },
+  args: { 
+    title: v.optional(v.string()), 
+    initialContent: v.optional(v.string()),
+    accessLevel: v.optional(v.union(v.literal("private"), v.literal("view"), v.literal("edit"))),
+  },
   handler: async (ctx, args) => {
     const user = await ctx.auth.getUserIdentity();
 
     if (!user) {
-      throw new ConvexError("Unathorized");
+      throw new ConvexError("Unauthorized");
     }
 
     const organizationId = (user.organization_id ?? undefined) as
@@ -36,10 +40,11 @@ export const create = mutation({
     | undefined;
 
     return await ctx.db.insert("documents", {
-      title: args.title ?? "Untitled coument",
+      title: args.title ?? "Untitled document",
       ownerId: user.subject,
       organizationId,
       initialContent: args.initialContent,
+      accessLevel: args.accessLevel ?? "private",
     });
   },
 });
@@ -148,12 +153,47 @@ export const updateById = mutation({
     const isOwner = document.ownerId === user.subject;
     const isOrganizationMember = 
       !!(document.organizationId && document.organizationId === organizationId);
+    const isPublicEditable = document.accessLevel === "edit";
+
+    if (!isOwner && !isOrganizationMember && !isPublicEditable) {
+      throw new ConvexError("Unauthorized");
+    }
+
+    return await ctx.db.patch(args.id, { title: args.title });
+  },
+});
+
+export const updateAccessLevel = mutation({
+  args: {
+    id: v.id("documents"),
+    accessLevel: v.union(v.literal("private"), v.literal("view"), v.literal("edit")),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.auth.getUserIdentity();
+
+    if (!user) {
+      throw new ConvexError("Unauthorized");
+    }
+
+    const organizationId = (user.organization_id ?? undefined) as
+      | string
+      | undefined;
+
+    const document = await ctx.db.get(args.id);
+
+    if (!document) {
+      throw new ConvexError("Document not found");
+    }
+
+    const isOwner = document.ownerId === user.subject;
+    const isOrganizationMember = 
+      !!(document.organizationId && document.organizationId === organizationId);
 
     if (!isOwner && !isOrganizationMember) {
       throw new ConvexError("Unauthorized");
     }
 
-    return await ctx.db.patch(args.id, { title: args.title });
+    return await ctx.db.patch(args.id, { accessLevel: args.accessLevel });
   },
 });
 

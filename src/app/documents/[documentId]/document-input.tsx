@@ -4,6 +4,7 @@ import { useMutation } from "convex/react";
 import { BsCloudCheck, BsCloudSlash } from "react-icons/bs";
 import { useStatus } from "@liveblocks/react";
 
+import { cn } from "@/lib/utils";
 import { useDebounce } from "@/hooks/use-debounce"; 
 
 import { api } from "../../../../convex/_generated/api";
@@ -13,9 +14,10 @@ import { LoaderIcon } from "lucide-react";
 interface DocumentInputProps {
   title: string;
   id: Id<"documents">;
+  isReadOnly?: boolean;
 };
 
-export const DocumentInput = ({ title, id }: DocumentInputProps) => {
+export const DocumentInput = ({ title, id, isReadOnly = false }: DocumentInputProps) => {
   const status = useStatus();
 
   const [value, setValue] = useState(title);
@@ -60,7 +62,7 @@ export const DocumentInput = ({ title, id }: DocumentInputProps) => {
 
   return (
     <div className="flex items-center gap-2">
-      {isEditing ? (
+      {isEditing && !isReadOnly ? (
         <form onSubmit={handleSubmit} className="relative w-fit max-w-[50ch]">
           <span className="invisible whitespace-pre px-1.5 text-lg">
             {value || " "}
@@ -76,12 +78,17 @@ export const DocumentInput = ({ title, id }: DocumentInputProps) => {
       ) : (
         <span 
           onClick={() => {
+            if (isReadOnly) return;
+            setValue(title);
             setIsEditing(true);
             setTimeout(() => {
               inputRef.current?.focus();
             }, 0);
           }}
-          className="text-lg px-1.5 cursor-pointer truncate">
+          className={cn(
+            "text-lg px-1.5 truncate",
+            !isReadOnly && "cursor-pointer"
+          )}>
           {title}
         </span>
       )}

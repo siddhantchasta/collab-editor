@@ -64,7 +64,10 @@ export async function POST(req: Request) {
     }
   }
 
-  if (!isOwner && !isOrganizationMember) {
+  const hasFullAccess = isOwner || isOrganizationMember || document.accessLevel === "edit";
+  const hasReadAccess = document.accessLevel === "view";
+
+  if (!hasFullAccess && !hasReadAccess) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { "Content-Type": "application/json" },
@@ -100,7 +103,8 @@ export async function POST(req: Request) {
       color,
     },
   });
-  session.allow(room, session.FULL_ACCESS);
+
+  session.allow(room, hasFullAccess ? session.FULL_ACCESS : session.READ_ACCESS);
   const { body, status } = await session.authorize();
 
   return new Response(body, { status });

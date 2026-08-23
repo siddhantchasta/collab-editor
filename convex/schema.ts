@@ -8,6 +8,13 @@ export default defineSchema({
     ownerId: v.string(),
     roomId: v.optional(v.string()),
     organizationId: v.optional(v.string()),
+    accessLevel: v.optional(
+      v.union(
+        v.literal("private"),
+        v.literal("view"),
+        v.literal("edit")
+      )
+    ),
   })
     .index("by_owner_id", ["ownerId"])
     .index("by_organization_id", ["organizationId"])
