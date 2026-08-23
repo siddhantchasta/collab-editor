@@ -46,7 +46,7 @@ export async function getUsers() {
     }
   }
 
-  return [
+    return [
     {
       id: user.id,
       name: user.fullName ?? user.primaryEmailAddress?.emailAddress ?? "Anonymous",
@@ -54,4 +54,33 @@ export async function getUsers() {
       color: "",
     },
   ];
+}
+
+export async function getUsersByIds(userIds: string[]) {
+  const { userId } = await auth();
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+
+  if (!userIds || userIds.length === 0) return [];
+
+  // Limit batch size to prevent enumeration
+  const sanitizedIds = userIds.slice(0, 25);
+
+  try {
+    const clerk = await clerkClient();
+    const response = await clerk.users.getUserList({
+      userId: sanitizedIds,
+    });
+
+    return response.data.map((u) => ({
+      id: u.id,
+      name: u.fullName ?? u.primaryEmailAddress?.emailAddress ?? "Anonymous",
+      avatar: u.imageUrl,
+      color: "",
+    }));
+  } catch (error) {
+    console.error("Failed to fetch users by IDs:", error);
+    return [];
+  }
 }

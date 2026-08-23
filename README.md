@@ -14,7 +14,7 @@
 
 ## Technical Overview
 
-`collaborative-editor-platform` is an enterprise-grade collaborative workspace built to deliver deterministic sub-50ms peer synchronization and robust multi-tenant data governance. By decoupling ephemeral real-time state synchronization (handled over WebSockets via CRDTs) from transactional persistence operations (handled via serverless backend mutations), the platform achieves concurrent editing guarantees without lock contention or data degradation.
+`collaborative-editor-platform` is an enterprise-grade collaborative workspace built to deliver deterministic peer synchronization and robust multi-tenant data governance. By decoupling ephemeral real-time state synchronization (handled over WebSockets via CRDTs) from transactional persistence operations (handled via serverless backend mutations), the platform achieves concurrent editing guarantees without lock contention or data degradation.
 
 ---
 
@@ -68,21 +68,28 @@ graph TD
 * **Mechanism**: Native ProseMirror schema extension development (`FontSize`, `LineHeight`, and interactive layout margin rulers).
 * **Execution**: Extended TipTap core extensions from scratch using custom HTML parsing (`parseHTML`) and attribute rendering (`renderHTML`) rules. Overrode default node spec commands to enforce pixel-precise layout control and DOM style attribute injection.
 
-### 3. Enterprise Multi-Tenant RBAC & Security Isolation
-* **Mechanism**: Organization-bounded workspaces managed via Clerk JWT custom claims, enforced server-side within Convex mutations.
-* **Execution**: Access tokens embed current `org_id` context. Convex backend database query functions validate the caller's identity context at execution time, blocking cross-organization data leakage at the database layer.
+### 3. Enterprise Multi-Tier RBAC & Defense-in-Depth Authorization
+* **Mechanism**: 3-tier granular permission engine (`Restricted`, `Can View`, `Can Edit`) with defense-in-depth enforcement across Database, WebSocket, and Editor tiers.
+* **Execution**: 
+  - **Database Layer**: Convex serverless mutations enforce row-level identity checks (`updateAccessLevel`, `updateById`, and strict owner/org-only `removeById`).
+  - **WebSocket Layer**: Liveblocks token broker mints scoped tokens (`session.FULL_ACCESS` vs `session.READ_ACCESS`). A dynamic reactive room key automatically upgrades persistent WebSocket connections when permissions change in real time.
+  - **Editor Layer**: Dynamic TipTap client lock (`editable: !isReadOnly`), disabling mutation toolbars, title renaming, and interactive margin ruler dragging in View-Only mode.
 
-### 4. Real-Time Presence Engine & Dynamic Cursors
-* **Mechanism**: Ephemeral state broadcasting powered by Liveblocks presence hooks (`useOthers`, `useMyPresence`).
+### 4. Enterprise Document Sharing & Cross-Tenant Collaboration
+* **Mechanism**: Google Docs-style modal with live permission switches, instant clipboard link generation, and cross-tenant user resolution.
+* **Execution**: Dynamic `getUsersByIds` Server Action securely queries Clerk's identity mesh with rate-limiting and session authentication, seamlessly resolving names and avatars of external collaborators joining public documents.
+
+### 5. Real-Time Presence Engine & Dynamic Carets
+* **Mechanism**: Ephemeral state broadcasting powered by Liveblocks presence and Yjs awareness protocols.
 * **Execution**: Broadcasts low-payload cursor coordinates, active text selection ranges, and user avatar metadata over WebSocket channels. Bypasses persistent storage entirely to eliminate database write overhead.
 
-### 5. Network Optimization & Debounced Backend Mutations
+### 6. Network Optimization & Debounced Backend Mutations
 * **Mechanism**: Custom asynchronous debouncing layer (`useDebounce`) integrated into React input hooks.
-* **Execution**: Coalesces rapid keyboard events into single transactional database calls. Reduces network traffic during document title updates or auto-saves by up to 90% while guaranteeing final state write completeness.
+* **Execution**: Coalesces rapid keyboard events into single transactional database calls. Reduces network traffic during document title updates. 
 
-### 6. Full-Text Indexed Search & Infinite Pagination
+### 7. Full-Text Indexed Search & Infinite Pagination
 * **Mechanism**: Database-level indexing combined with server-assisted cursor pagination via Convex.
-* **Execution**: Schema-indexed queries (`by_organization_id`) enable sub-millisecond document lookups. Document lists are paginated on-demand, minimizing initial payload size and client DOM overhead.
+* **Execution**: Document lists are paginated on-demand, minimizing initial payload size and client DOM overhead.
 
 ---
 

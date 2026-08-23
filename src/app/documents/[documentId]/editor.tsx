@@ -14,6 +14,7 @@ import ImageResize from "tiptap-extension-resize-image";
 import TableCell from '@tiptap/extension-table-cell'
 import TableHeader from '@tiptap/extension-table-header'
 import TableRow from '@tiptap/extension-table-row'
+import { useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react'
 import { useLiveblocksExtension } from "@liveblocks/react-tiptap";
 import { useStorage } from '@liveblocks/react';
@@ -28,9 +29,10 @@ import { Threads } from './threads';
 
 interface EditorProps {
   initialContent?: string | undefined;
+  isReadOnly?: boolean;
 };
 
-export const Editor = ({ initialContent }: EditorProps) => {
+export const Editor = ({ initialContent, isReadOnly = false }: EditorProps) => {
   const leftMargin = useStorage((root) => root.leftMargin) ?? LEFT_MARGIN_DEFAULT;
   const rightMargin = useStorage((root) => root.rightMargin) ?? RIGHT_MARGIN_DEFAULT;
   
@@ -41,8 +43,9 @@ export const Editor = ({ initialContent }: EditorProps) => {
   const { setEditor } = useEditorStore();
 
   const editor = useEditor({
-    autofocus: true,
+    autofocus: false,
     immediatelyRender: false,
+    editable: !isReadOnly,
     onCreate({ editor }) {
       setEditor(editor);
     },
@@ -108,11 +111,17 @@ export const Editor = ({ initialContent }: EditorProps) => {
       }),
       TaskList,
     ],
-  })
+  });
+
+  useEffect(() => {
+    if (editor) {
+      editor.setEditable(!isReadOnly);
+    }
+  }, [editor, isReadOnly]);
 
   return (
     <div className="size-full overflow-x-auto bg-[#F9FBFD] px-4 print:p-0 print:bg-white print:overflow-visible">
-      <Ruler />
+      <Ruler isReadOnly={isReadOnly} />
       <div className="min-w-max flex justify-center w-[816px] py-4 print:py-0 mx-auto print:w-full print:min-w-0">
         <EditorContent editor={editor} />
         <Threads editor={editor} />
